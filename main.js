@@ -5,6 +5,18 @@ const { mkdir } = require('node:fs/promises');
 const { once } = require('node:events');
 const { Command } = require('commander');
 
+function getCacheFilePath(requestUrl, cacheDir) {
+    const pathname = requestUrl.split('?')[0];
+    const match = /^\/(\d{3})$/.exec(pathname);
+
+    if (!match) {
+        return null;
+    }
+
+    const code = match[1];
+    return path.join(cacheDir, `${code}.jpg`);
+}
+
 async function start() {
     const program = new Command();
 
@@ -32,10 +44,20 @@ async function start() {
         await mkdir(cacheDir, { recursive: true });
 
         const server = http.createServer(async (req, res) => {
+            const cacheFilePath = getCacheFilePath(req.url, cacheDir);
+
+            if (cacheFilePath === null) {
+                res.writeHead(400, {
+                    'Content-Type': 'text/plain; charset=utf-8'
+                });
+                res.end('Помилка: шлях має містити три цифри, наприклад /418.');
+                return;
+            }
+
             res.writeHead(501, {
                 'Content-Type': 'text/plain; charset=utf-8'
             });
-            res.end('Обробка HTTP-запитів ще не реалізована.');
+            res.end(`Обробка ще не реалізована. Файл кешу: ${path.basename(cacheFilePath)}`);
         });
 
         server.listen(port, options.host);
