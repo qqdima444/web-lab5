@@ -45,6 +45,15 @@ async function start() {
         await mkdir(cacheDir, { recursive: true });
 
         const server = http.createServer(async (req, res) => {
+            if (!['GET', 'PUT', 'DELETE'].includes(req.method)) {
+                res.writeHead(405, {
+                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Allow': 'GET, PUT, DELETE'
+                });
+                res.end('Помилка: цей HTTP-метод не дозволено.');
+                return;
+            }
+
             const cacheFilePath = getCacheFilePath(req.url, cacheDir);
 
             if (cacheFilePath === null) {
@@ -111,14 +120,6 @@ async function start() {
                         res.end('Помилка сервера під час видалення картинки.');
                     }
                 }
-                return;
-            }
-
-            if (req.method !== 'GET') {
-                res.writeHead(501, {
-                    'Content-Type': 'text/plain; charset=utf-8'
-                });
-                res.end('Цей HTTP-метод ще не реалізовано.');
                 return;
             }
 
