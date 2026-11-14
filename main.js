@@ -1,7 +1,7 @@
 
 const http = require('node:http');
 const path = require('node:path');
-const { mkdir, readFile, writeFile } = require('node:fs/promises');
+const { mkdir, readFile, writeFile, unlink } = require('node:fs/promises');
 const { once } = require('node:events');
 const { Command } = require('commander');
 const superagent = require('superagent');
@@ -85,6 +85,31 @@ async function start() {
                         'Content-Type': 'text/plain; charset=utf-8'
                     });
                     res.end('Помилка сервера під час збереження картинки.');
+                }
+                return;
+            }
+
+            if (req.method === 'DELETE') {
+                try {
+                    await unlink(cacheFilePath);
+
+                    res.writeHead(200, {
+                        'Content-Type': 'text/plain; charset=utf-8'
+                    });
+                    res.end('Картинку видалено з кешу.');
+                } catch (error) {
+                    if (error.code === 'ENOENT') {
+                        res.writeHead(404, {
+                            'Content-Type': 'text/plain; charset=utf-8'
+                        });
+                        res.end('Картинку не знайдено в кеші.');
+                    } else {
+                        console.error(`Помилка обробки DELETE: ${error.message}`);
+                        res.writeHead(500, {
+                            'Content-Type': 'text/plain; charset=utf-8'
+                        });
+                        res.end('Помилка сервера під час видалення картинки.');
+                    }
                 }
                 return;
             }

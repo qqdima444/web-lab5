@@ -27,3 +27,15 @@ curl -s -D - -o /dev/null http://127.0.0.1:3000/418
 
 # PUT із порожнім тілом
 curl -i -X PUT -H "Content-Type: image/jpeg" --data-binary "" http://127.0.0.1:3000/418
+
+# DELETE - видалення картинки з кешу
+curl -i -X DELETE http://127.0.0.1:3000/418
+
+# Повторний DELETE - картинку не знайдено
+curl -i -X DELETE http://127.0.0.1:3000/418
+
+# GET після DELETE - повторне завантаження з http.cat
+curl -s -D - -o /dev/null http://127.0.0.1:3000/418
+
+# Повторний GET - отримання з кешу
+curl -s -D - -o /dev/null http://127.0.0.1:3000/418
