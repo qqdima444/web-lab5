@@ -55,6 +55,40 @@ async function start() {
                 return;
             }
 
+            if (req.method === 'PUT') {
+                try {
+                    const chunks = [];
+
+                    for await (const chunk of req) {
+                        chunks.push(chunk);
+                    }
+
+                    const image = Buffer.concat(chunks);
+
+                    if (image.length === 0) {
+                        res.writeHead(400, {
+                            'Content-Type': 'text/plain; charset=utf-8'
+                        });
+                        res.end('Помилка: тіло запиту порожнє.');
+                        return;
+                    }
+
+                    await writeFile(cacheFilePath, image);
+
+                    res.writeHead(201, {
+                        'Content-Type': 'text/plain; charset=utf-8'
+                    });
+                    res.end('Картинку збережено в кеш.');
+                } catch (error) {
+                    console.error(`Помилка обробки PUT: ${error.message}`);
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain; charset=utf-8'
+                    });
+                    res.end('Помилка сервера під час збереження картинки.');
+                }
+                return;
+            }
+
             if (req.method !== 'GET') {
                 res.writeHead(501, {
                     'Content-Type': 'text/plain; charset=utf-8'

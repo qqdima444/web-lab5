@@ -18,3 +18,12 @@ curl -s -D - -o /dev/null http://127.0.0.1:3000/418
 
 # GET неіснуючого коду
 curl -s -D - -o /dev/null http://127.0.0.1:3000/999
+
+# PUT - збереження власної JPEG-картинки
+curl -i -X PUT -H "Content-Type: image/jpeg" --data-binary "@test-image.jpg" http://127.0.0.1:3000/418
+
+# GET після PUT - отримання власної картинки з кешу
+curl -s -D - -o /dev/null http://127.0.0.1:3000/418
+
+# PUT із порожнім тілом
+curl -i -X PUT -H "Content-Type: image/jpeg" --data-binary "" http://127.0.0.1:3000/418
