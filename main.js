@@ -1,9 +1,10 @@
 
 const http = require('node:http');
 const path = require('node:path');
-const { mkdir } = require('node:fs/promises');
+const { mkdir, readFile, writeFile } = require('node:fs/promises');
 const { once } = require('node:events');
 const { Command } = require('commander');
+const superagent = require('superagent');
 
 function getCacheFilePath(requestUrl, cacheDir) {
     const pathname = requestUrl.split('?')[0];
@@ -54,10 +55,68 @@ async function start() {
                 return;
             }
 
-            res.writeHead(501, {
-                'Content-Type': 'text/plain; charset=utf-8'
-            });
-            res.end(`Обробка ще не реалізована. Файл кешу: ${path.basename(cacheFilePath)}`);
+            if (req.method !== 'GET') {
+                res.writeHead(501, {
+                    'Content-Type': 'text/plain; charset=utf-8'
+                });
+                res.end('Цей HTTP-метод ще не реалізовано.');
+                return;
+            }
+
+            const code = path.basename(cacheFilePath, '.jpg');
+
+            try {
+                let image;
+                let source;
+
+                try {
+                    image = await readFile(cacheFilePath);
+                    source = 'cache';
+                } catch (error) {
+                    if (error.code !== 'ENOENT') {
+                        throw error;
+                    }
+
+                    try {
+                        const response = await superagent
+                            .get(`https://http.cat/${code}`)
+                            .buffer(true);
+
+                        if (!Buffer.isBuffer(response.body) ||
+                            !response.type.startsWith('image/jpeg')) {
+                            res.writeHead(404, {
+                                'Content-Type': 'text/plain; charset=utf-8'
+                            });
+                            res.end('Картинку не знайдено на http.cat.');
+                            return;
+                        }
+
+                        image = response.body;
+                    } catch (error) {
+                        res.writeHead(404, {
+                            'Content-Type': 'text/plain; charset=utf-8'
+                        });
+                        res.end('Не вдалося отримати картинку з http.cat.');
+                        return;
+                    }
+
+                    await writeFile(cacheFilePath, image);
+                    source = 'http.cat';
+                }
+
+                res.writeHead(200, {
+                    'Content-Type': 'image/jpeg',
+                    'X-Image-Source': source
+                });
+                res.end(image);
+
+            } catch (error) {
+                console.error(`Помилка обробки GET: ${error.message}`);
+                res.writeHead(500, {
+                    'Content-Type': 'text/plain; charset=utf-8'
+                });
+                res.end('Помилка сервера під час роботи з кешем.');
+            }
         });
 
         server.listen(port, options.host);
